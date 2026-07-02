@@ -1,3 +1,4 @@
+
 # 🐧 System Programming & OS Internals in C
 
 A collection of Linux-based C projects designed to explore how operating systems work under the hood, covering processes, threads, CPU scheduling, and systems-level performance analysis.
@@ -51,37 +52,88 @@ Typical worker counts tested:
 1, 10, 100, 1,000, 10,000, 100,000, 200,000
 ```
 
+## 2. Multi-Level Queue CPU Scheduler
+
+This project is a custom-built simulator of a single-processor CPU scheduler. It acts like the brain of an operating system, deciding which process receives CPU time, in what order, and for how long.
+
+### Core Features
+
+- **Multi-Level Priority Scheduling**
+  - Maintains separate ready queues for different priority classes (**A > B > C**).
+  - Higher-priority processes immediately preempt lower-priority ones.
+
+- **Time Quantum Support**
+  - Each priority level has its own execution quantum:
+    - **A = 2**
+    - **B = 4**
+    - **C = 8**
+  - Simulates time-sliced CPU sharing similar to real operating systems.
+
+- **Dynamic Memory Management**
+  - Processes are dynamically allocated using `malloc()` when they arrive.
+  - Completed processes are properly released using `free()`.
+  - Designed to prevent memory leaks during long-running simulations.
+
 ---
-### 2. Multi-Level Queue CPU Scheduler
+### 📊 Understanding the Test Cases & Output
 
-A custom CPU scheduling simulator that models how an operating system selects which process should run and for how long.
+To verify scheduler behavior, the simulator reads text files (e.g., `case3.txt`) that describe process arrivals over time.
 
-The scheduler maintains multiple priority queues, supports time slicing through configurable quantums, and performs preemption whenever a higher-priority process becomes ready. The project provides a simplified but practical view of how modern operating systems manage CPU resources.
+#### Input Format
 
-#### Features
+Each line in a test file contains:
 
-- Multi-Level Queue Scheduling
-- Priority-Based Process Selection
-- FIFO Queue Management
-- Configurable Time Quantums
-- Preemptive Context Switching
-- Dynamic Process Creation and Removal
-- Tick-Based Scheduling Simulation
+- Arrival Time
+- Priority Type (`A`, `B`, or `C`)
+- Process ID
+- Required Burst Time
 
-#### Build & Run
+#### `PRINTALL` Command
+
+Some test cases contain a special `PRINTALL` command.
+
+When the simulator reaches a time step containing `PRINTALL`, it prints a snapshot of the current scheduler state.
+
+#### Reading the Output
+
+Each snapshot contains three sections:
+
+- **RP (Running Process)** The process currently executing on the CPU.
+
+- **WP (Waiting Processes)** Processes waiting in the ready queues.
+
+- **FP (Finished Processes)** Processes that have completed execution.
+
+By tracing these snapshots, you can verify that the scheduler correctly:
+
+- Handles process preemption
+- Enforces queue-specific time quanta
+- Prioritizes higher-priority tasks
+- Manages process lifecycles and memory safely
+
+---
+
+### 🚀 Compile and Run
+
+This project requires a standard Linux environment (or a Docker container).
+
+#### 1. Compile the Scheduler
 
 ```bash
-gcc *.c -Wall -o scheduler
-./scheduler case1.txt
+gcc -std=c11 -Wall -Werror \
+    main.c scheduler.c cpu.c queue.c process.c input.c \
+    -o scheduler
 ```
 
----
-## 🛠 Technologies
-- **C** — systems-level programming
-- **POSIX Threads (pthreads)** — multithreading
-- **Linux System Calls (`fork`)** — process creation
-- **Dynamic Memory Allocation**
-- **Linked Lists & FIFO Queues**
-- **CPU Scheduling Algorithms**
-- **Performance Benchmarking**
-- **Linux Systems Programming**
+#### 2. Run a Simulation
+
+```bash
+./scheduler ./test/case3.txt
+```
+
+#### 3. Verify Memory Safety (Optional)
+
+```bash
+valgrind --track-origins=yes --leak-check=full \
+    ./scheduler ./test/case3.txt
+```
